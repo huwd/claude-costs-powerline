@@ -58,13 +58,96 @@ line fast.
 
 3. Open (or restart) Claude Code — the custom status line appears immediately.
 
-## Pricing
+## How costs are calculated
 
-`costs.py` has a hardcoded pricing table for current Claude models. If
-Anthropic changes pricing or releases new models, update the `PRICING` dict at
-the top of the file. Model IDs with date suffixes (e.g.
-`claude-haiku-4-5-20251001`) are matched by prefix, so only the base model ID
-needs to be in the table.
+### Data source
+
+Claude Code writes a record for every API response to JSONL files under
+`~/.claude/projects/**/*.jsonl`. Each line is a JSON object; `costs.py` only
+reads records where `type == "assistant"`, which are the ones that carry token
+usage data.
+
+A typical record looks like:
+
+```json
+{
+  "type": "assistant",
+  "timestamp": "2026-05-31T14:23:01.456Z",
+  "message": {
+    "model": "claude-sonnet-4-6",
+    "usage": {
+      "input_tokens": 8021,
+      "cache_creation_input_tokens": 1200,
+      "cache_read_input_tokens": 42300,
+      "output_tokens": 614
+    }
+  }
+}
+```
+
+### Token categories
+
+Each response reports four token counts:
+
+| Field | What it is | Relative price |
+|---|---|---|
+| `input_tokens` | Tokens read fresh from the context window | Full input price |
+| `cache_creation_input_tokens` | Tokens written into a prompt cache | ~1.25× input price |
+| `cache_read_input_tokens` | Tokens served from an existing cache | ~0.1× input price |
+| `output_tokens` | Tokens generated in the response | Full output price (~5× input) |
+
+Cache hits (`cache_read_input_tokens`) are cheap — about 10% of the input
+price. Prompt caching is used heavily by Claude Code to avoid re-sending the
+full conversation context on every turn, so a typical session has a high ratio
+of cache reads to fresh input tokens.
+
+### Cost formula
+
+For each response:
+
+```
+cost = (input_tokens             × input_price
+      + cache_creation_input_tokens × cache_write_price
+      + cache_read_input_tokens  × cache_read_price
+      + output_tokens            × output_price) ÷ 1,000,000
+```
+
+Prices are per million tokens. The current table (USD):
+
+| Model | Input | Cache write | Cache read | Output |
+|---|---|---|---|---|
+| claude-sonnet-4-6 / 4-5 | $3.00 | $3.75 | $0.30 | $15.00 |
+| claude-opus-4-8 / 4-5 | $15.00 | $18.75 | $1.50 | $75.00 |
+| claude-haiku-4-5 | $0.80 | $1.00 | $0.08 | $4.00 |
+
+### Rolling windows
+
+The 5h and 7d figures sum the cost of every response whose `timestamp` falls
+within the window ending now. Both windows are computed in a single pass over
+the JSONL files. Symlinked files are skipped. Lines that fail to parse are
+skipped silently.
+
+### Model ID resolution
+
+Claude Code records full versioned model IDs like `claude-haiku-4-5-20251001`.
+`get_pricing()` resolves these to a pricing row with:
+
+1. Exact match against the `PRICING` dict.
+2. Prefix match — `claude-haiku-4-5-20251001` matches `claude-haiku-4-5`.
+3. Fallback to Sonnet 4.6 rates for any unrecognised model.
+
+### Limitations and accuracy
+
+- **This is an estimate.** The source of truth for billing is Anthropic's
+  usage dashboard, not local JSONL files.
+- **Pricing table can go stale.** If Anthropic changes prices or you use a
+  model not in the table, update the `PRICING` dict in `costs.py`. An unknown
+  model falls back to Sonnet rates, which will overstate costs for Haiku and
+  understate them for Opus.
+- **The session cost field** (`session: $N`) comes from Claude Code's own JSON
+  feed rather than `costs.py`, so it may use a different accounting method.
+- **Clock skew.** Timestamps in the JSONL files are UTC. The rolling window
+  cutoff is also computed in UTC, so local timezone has no effect.
 
 ## Cache
 
