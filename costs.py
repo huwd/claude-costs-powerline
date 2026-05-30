@@ -8,12 +8,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # USD per million tokens
+# Source: https://platform.claude.com/docs/en/about-claude/pricing
+# Cache writes have two tiers: 5-minute (1.25× input) and 1-hour (2× input).
+# Claude Code predominantly uses 1-hour cache writes.
 PRICING = {
-    "claude-sonnet-4-6": {"input": 3.00, "cache_write": 3.75, "cache_read": 0.30, "output": 15.00},
-    "claude-sonnet-4-5": {"input": 3.00, "cache_write": 3.75, "cache_read": 0.30, "output": 15.00},
-    "claude-opus-4-8":   {"input": 15.00, "cache_write": 18.75, "cache_read": 1.50, "output": 75.00},
-    "claude-opus-4-5":   {"input": 15.00, "cache_write": 18.75, "cache_read": 1.50, "output": 75.00},
-    "claude-haiku-4-5":  {"input": 0.80, "cache_write": 1.00, "cache_read": 0.08, "output": 4.00},
+    # Opus 4.5 and later: $5 / $25
+    "claude-opus-4-8": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
+    "claude-opus-4-7": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
+    "claude-opus-4-6": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
+    "claude-opus-4-5": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
+    # Opus 4.1 and earlier: $15 / $75
+    "claude-opus-4-1": {"input": 15.00, "cache_write_5m": 18.75, "cache_write_1h": 30.00, "cache_read": 1.50, "output": 75.00},
+    # Sonnet: $3 / $15
+    "claude-sonnet-4-6": {"input": 3.00, "cache_write_5m": 3.75, "cache_write_1h":  6.00, "cache_read": 0.30, "output": 15.00},
+    "claude-sonnet-4-5": {"input": 3.00, "cache_write_5m": 3.75, "cache_write_1h":  6.00, "cache_read": 0.30, "output": 15.00},
+    # Haiku 4.5: $1 / $5
+    "claude-haiku-4-5": {"input": 1.00, "cache_write_5m":  1.25, "cache_write_1h":  2.00, "cache_read": 0.10, "output":  5.00},
+    # Haiku 3.5 (retired): $0.80 / $4
+    "claude-haiku-3-5": {"input": 0.80, "cache_write_5m":  1.00, "cache_write_1h":  1.60, "cache_read": 0.08, "output":  4.00},
 }
 DEFAULT_PRICING = PRICING["claude-sonnet-4-6"]
 
@@ -30,9 +42,21 @@ def get_pricing(model: str) -> dict:
 def message_cost(model: str, usage: dict) -> float:
     p = get_pricing(model)
     m = 1_000_000
+    # Use per-tier cache creation breakdown when available (present in newer JSONL records).
+    # Falls back to the aggregate field assuming 5-minute rate for older records.
+    cache_creation = usage.get("cache_creation", {})
+    cache_5m = cache_creation.get("ephemeral_5m_input_tokens")
+    cache_1h = cache_creation.get("ephemeral_1h_input_tokens")
+    if cache_5m is None and cache_1h is None:
+        cache_5m = usage.get("cache_creation_input_tokens", 0)
+        cache_1h = 0
+    else:
+        cache_5m = cache_5m or 0
+        cache_1h = cache_1h or 0
     return (
         usage.get("input_tokens", 0) * p["input"] / m
-        + usage.get("cache_creation_input_tokens", 0) * p["cache_write"] / m
+        + cache_5m * p["cache_write_5m"] / m
+        + cache_1h * p["cache_write_1h"] / m
         + usage.get("cache_read_input_tokens", 0) * p["cache_read"] / m
         + usage.get("output_tokens", 0) * p["output"] / m
     )

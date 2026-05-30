@@ -106,19 +106,29 @@ of cache reads to fresh input tokens.
 For each response:
 
 ```
-cost = (input_tokens             × input_price
-      + cache_creation_input_tokens × cache_write_price
-      + cache_read_input_tokens  × cache_read_price
-      + output_tokens            × output_price) ÷ 1,000,000
+cost = (input_tokens                    × input_price
+      + cache_creation_5m_tokens        × cache_write_5m_price
+      + cache_creation_1h_tokens        × cache_write_1h_price
+      + cache_read_input_tokens         × cache_read_price
+      + output_tokens                   × output_price) ÷ 1,000,000
 ```
 
-Prices are per million tokens. The current table (USD):
+Prices are per million tokens. Source:
+[platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing)
 
-| Model | Input | Cache write | Cache read | Output |
-|---|---|---|---|---|
-| claude-sonnet-4-6 / 4-5 | $3.00 | $3.75 | $0.30 | $15.00 |
-| claude-opus-4-8 / 4-5 | $15.00 | $18.75 | $1.50 | $75.00 |
-| claude-haiku-4-5 | $0.80 | $1.00 | $0.08 | $4.00 |
+| Model | Input | Cache write 5m | Cache write 1h | Cache read | Output |
+|---|---|---|---|---|---|
+| claude-opus-4-5 through 4-8 | $5.00 | $6.25 | $10.00 | $0.50 | $25.00 |
+| claude-opus-4-1 and earlier | $15.00 | $18.75 | $30.00 | $1.50 | $75.00 |
+| claude-sonnet-4-5 / 4-6 | $3.00 | $3.75 | $6.00 | $0.30 | $15.00 |
+| claude-haiku-4-5 | $1.00 | $1.25 | $2.00 | $0.10 | $5.00 |
+| claude-haiku-3-5 (retired) | $0.80 | $1.00 | $1.60 | $0.08 | $4.00 |
+
+Cache writes come in two durations: 5-minute (1.25× input price) and 1-hour
+(2× input price). The JSONL records include a `cache_creation` breakdown with
+`ephemeral_5m_input_tokens` and `ephemeral_1h_input_tokens`. Claude Code uses
+1-hour cache writes for session context. For older JSONL records that lack this
+breakdown, all cache writes are assumed 5-minute (a slight underestimate).
 
 ### Rolling windows
 
