@@ -40,7 +40,10 @@ line fast.
 
 ## Installation
 
-1. Copy the files into `~/.claude/`:
+1. Run `/terminal-setup` inside Claude Code. This is a built-in command that
+   installs the shell integration Claude Code needs to render a status line.
+
+2. Copy the files from this repo into `~/.claude/`:
 
    ```sh
    cp statusline-command.sh ~/.claude/
@@ -48,7 +51,7 @@ line fast.
    chmod +x ~/.claude/statusline-command.sh
    ```
 
-2. Tell Claude Code to use the script. In `~/.claude/settings.json`:
+3. Tell Claude Code to use the script. In `~/.claude/settings.json`:
 
    ```json
    {
@@ -56,7 +59,7 @@ line fast.
    }
    ```
 
-3. Open (or restart) Claude Code — the custom status line appears immediately.
+4. Restart Claude Code — the custom status line appears immediately.
 
 ## How costs are calculated
 
