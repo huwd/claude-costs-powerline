@@ -67,12 +67,15 @@ def costs_for_windows(windows_hours: list[float]) -> list[float]:
     projects_dir = Path.home() / ".claude" / "projects"
     now = datetime.now(timezone.utc).timestamp()
     cutoffs = [now - h * 3600 for h in windows_hours]
+    oldest_cutoff = min(cutoffs)
     totals = [0.0] * len(windows_hours)
 
     for jsonl_file in projects_dir.rglob("*.jsonl"):
         if jsonl_file.is_symlink():
             continue
         try:
+            if jsonl_file.stat().st_mtime < oldest_cutoff:
+                continue
             for line in jsonl_file.open():
                 try:
                     obj = json.loads(line)
