@@ -1,4 +1,10 @@
 #!/bin/sh
+
+if [ -t 0 ]; then
+  printf "statusline-command.sh expects Claude status JSON on stdin\n" >&2
+  exit 64
+fi
+
 input=$(cat)
 
 # Strip non-printable and escape characters to prevent terminal injection
@@ -96,3 +102,4 @@ if [ -n "$seven_day_pct" ] || [ -n "$seven_day_cost" ]; then
   [ -n "$seven_day_pct" ] && rate_block "$seven_day_pct" "$seven_day_reset" "$seven_day_cost"
   [ -z "$seven_day_pct" ] && [ -n "$seven_day_cost" ] && printf " %s" "$seven_day_cost"
 fi
+exit 0
