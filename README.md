@@ -121,8 +121,10 @@ Prices are per million tokens. Source:
 
 | Model | Input | Cache write 5m | Cache write 1h | Cache read | Output |
 |---|---|---|---|---|---|
-| claude-opus-4-5 through 4-8 | $5.00 | $6.25 | $10.00 | $0.50 | $25.00 |
+| claude-fable-5 / claude-mythos-5 | $10.00 | $12.50 | $20.00 | $1.00 | $50.00 |
+| claude-opus-5, claude-opus-4-5 through 4-8 | $5.00 | $6.25 | $10.00 | $0.50 | $25.00 |
 | claude-opus-4-1 and earlier | $15.00 | $18.75 | $30.00 | $1.50 | $75.00 |
+| claude-sonnet-5 | $2.00 | $2.50 | $4.00 | $0.20 | $10.00 |
 | claude-sonnet-4-5 / 4-6 | $3.00 | $3.75 | $6.00 | $0.30 | $15.00 |
 | claude-haiku-4-5 | $1.00 | $1.25 | $2.00 | $0.10 | $5.00 |
 | claude-haiku-3-5 (retired) | $0.80 | $1.00 | $1.60 | $0.08 | $4.00 |
@@ -147,7 +149,7 @@ Claude Code records full versioned model IDs like `claude-haiku-4-5-20251001`.
 
 1. Exact match against the `PRICING` dict.
 2. Prefix match — `claude-haiku-4-5-20251001` matches `claude-haiku-4-5`.
-3. Fallback to Sonnet 4.6 rates for any unrecognised model.
+3. Fallback to Sonnet 5 rates for any unrecognised model.
 
 ### Limitations and accuracy
 
