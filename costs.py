@@ -12,26 +12,33 @@ from pathlib import Path
 # Cache writes have two tiers: 5-minute (1.25× input) and 1-hour (2× input).
 # Claude Code predominantly uses 1-hour cache writes.
 PRICING = {
+    # Fable 5.1 / Mythos 5.1: $10 / $50, cache reads at 0.025x input
+    "claude-fable-5-1": {"input": 10.00, "cache_write_5m": 12.50, "cache_write_1h": 20.00, "cache_read": 0.25, "output": 50.00},
+    "claude-mythos-5-1": {"input": 10.00, "cache_write_5m": 12.50, "cache_write_1h": 20.00, "cache_read": 0.25, "output": 50.00},
     # Fable 5 / Mythos 5: $10 / $50
     "claude-fable-5": {"input": 10.00, "cache_write_5m": 12.50, "cache_write_1h": 20.00, "cache_read": 1.00, "output": 50.00},
     "claude-mythos-5": {"input": 10.00, "cache_write_5m": 12.50, "cache_write_1h": 20.00, "cache_read": 1.00, "output": 50.00},
-    # Opus 5 and Opus 4.6-4.8: $5 / $25
+    # Opus 5.5: $4 / $20, cache reads at 0.05x input
+    "claude-opus-5-5": {"input": 4.00, "cache_write_5m":  5.00, "cache_write_1h":  8.00, "cache_read": 0.20, "output": 20.00},
+    # Opus 5 and Opus 4.5-4.8: $5 / $25
     "claude-opus-5": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
     "claude-opus-4-8": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
     "claude-opus-4-7": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
     "claude-opus-4-6": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
     "claude-opus-4-5": {"input": 5.00, "cache_write_5m":  6.25, "cache_write_1h": 10.00, "cache_read": 0.50, "output": 25.00},
-    # Opus 4.1 and earlier: $15 / $75
+    # Opus 4.1 and Opus 4 (claude-opus-4-20250514): $15 / $75
     "claude-opus-4-1": {"input": 15.00, "cache_write_5m": 18.75, "cache_write_1h": 30.00, "cache_read": 1.50, "output": 75.00},
+    "claude-opus-4": {"input": 15.00, "cache_write_5m": 18.75, "cache_write_1h": 30.00, "cache_read": 1.50, "output": 75.00},
     # Sonnet 5: $2 / $10
     "claude-sonnet-5": {"input": 2.00, "cache_write_5m": 2.50, "cache_write_1h":  4.00, "cache_read": 0.20, "output": 10.00},
-    # Sonnet 4.5 / 4.6: $3 / $15
+    # Sonnet 4 / 4.5 / 4.6: $3 / $15
     "claude-sonnet-4-6": {"input": 3.00, "cache_write_5m": 3.75, "cache_write_1h":  6.00, "cache_read": 0.30, "output": 15.00},
     "claude-sonnet-4-5": {"input": 3.00, "cache_write_5m": 3.75, "cache_write_1h":  6.00, "cache_read": 0.30, "output": 15.00},
+    "claude-sonnet-4": {"input": 3.00, "cache_write_5m": 3.75, "cache_write_1h":  6.00, "cache_read": 0.30, "output": 15.00},
     # Haiku 4.5: $1 / $5
     "claude-haiku-4-5": {"input": 1.00, "cache_write_5m":  1.25, "cache_write_1h":  2.00, "cache_read": 0.10, "output":  5.00},
     # Haiku 3.5 (retired): $0.80 / $4
-    "claude-haiku-3-5": {"input": 0.80, "cache_write_5m":  1.00, "cache_write_1h":  1.60, "cache_read": 0.08, "output":  4.00},
+    "claude-3-5-haiku": {"input": 0.80, "cache_write_5m":  1.00, "cache_write_1h":  1.60, "cache_read": 0.08, "output":  4.00},
 }
 DEFAULT_PRICING = PRICING["claude-sonnet-5"]
 
@@ -39,9 +46,10 @@ DEFAULT_PRICING = PRICING["claude-sonnet-5"]
 def get_pricing(model: str) -> dict:
     if model in PRICING:
         return PRICING[model]
-    for key in PRICING:
-        if model.startswith(key):
-            return PRICING[key]
+    # Longest prefix wins, so claude-opus-5-5 isn't priced as claude-opus-5.
+    matches = [key for key in PRICING if model.startswith(key)]
+    if matches:
+        return PRICING[max(matches, key=len)]
     return DEFAULT_PRICING
 
 

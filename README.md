@@ -122,16 +122,19 @@ Prices are per million tokens. Source:
 
 | Model | Input | Cache write 5m | Cache write 1h | Cache read | Output |
 |---|---|---|---|---|---|
+| claude-fable-5-1 / claude-mythos-5-1 | $10.00 | $12.50 | $20.00 | $0.25 | $50.00 |
 | claude-fable-5 / claude-mythos-5 | $10.00 | $12.50 | $20.00 | $1.00 | $50.00 |
+| claude-opus-5-5 | $4.00 | $5.00 | $8.00 | $0.20 | $20.00 |
 | claude-opus-5, claude-opus-4-5 through 4-8 | $5.00 | $6.25 | $10.00 | $0.50 | $25.00 |
-| claude-opus-4-1 and earlier | $15.00 | $18.75 | $30.00 | $1.50 | $75.00 |
+| claude-opus-4 / claude-opus-4-1 (retired) | $15.00 | $18.75 | $30.00 | $1.50 | $75.00 |
 | claude-sonnet-5 | $2.00 | $2.50 | $4.00 | $0.20 | $10.00 |
-| claude-sonnet-4-5 / 4-6 | $3.00 | $3.75 | $6.00 | $0.30 | $15.00 |
+| claude-sonnet-4 / 4-5 / 4-6 | $3.00 | $3.75 | $6.00 | $0.30 | $15.00 |
 | claude-haiku-4-5 | $1.00 | $1.25 | $2.00 | $0.10 | $5.00 |
-| claude-haiku-3-5 (retired) | $0.80 | $1.00 | $1.60 | $0.08 | $4.00 |
+| claude-3-5-haiku (retired) | $0.80 | $1.00 | $1.60 | $0.08 | $4.00 |
 
 Cache writes come in two durations: 5-minute (1.25× input price) and 1-hour
-(2× input price). The JSONL records include a `cache_creation` breakdown with
+(2× input price). Cache reads are 0.1× input price, except on Fable 5.1 /
+Mythos 5.1 (0.025×) and Opus 5.5 (0.05×). The JSONL records include a `cache_creation` breakdown with
 `ephemeral_5m_input_tokens` and `ephemeral_1h_input_tokens`. Claude Code uses
 1-hour cache writes for session context. For older JSONL records that lack this
 breakdown, all cache writes are assumed 5-minute (a slight underestimate).
@@ -149,7 +152,9 @@ Claude Code records full versioned model IDs like `claude-haiku-4-5-20251001`.
 `get_pricing()` resolves these to a pricing row with:
 
 1. Exact match against the `PRICING` dict.
-2. Prefix match — `claude-haiku-4-5-20251001` matches `claude-haiku-4-5`.
+2. Longest prefix match — `claude-haiku-4-5-20251001` matches
+   `claude-haiku-4-5`, and `claude-opus-5-5` matches `claude-opus-5-5` rather
+   than `claude-opus-5`.
 3. Fallback to Sonnet 5 rates for any unrecognised model.
 
 ### Limitations and accuracy
