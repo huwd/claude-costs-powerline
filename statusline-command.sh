@@ -88,17 +88,17 @@ if [ -n "$used_pct" ]; then
 fi
 
 if [ -n "$session_cost" ]; then
-  printf " | session: \$%.4f" "$session_cost"
+  printf " | session API equiv. (est.): \$%.4f" "$session_cost"
 fi
 
 if [ -n "$five_hour_pct" ] || [ -n "$five_hour_cost" ]; then
-  printf " | 5h:"
+  printf " | 5h API equiv. (est.):"
   [ -n "$five_hour_pct" ] && rate_block "$five_hour_pct" "$five_hour_reset" "$five_hour_cost"
   [ -z "$five_hour_pct" ] && [ -n "$five_hour_cost" ] && printf " %s" "$five_hour_cost"
 fi
 
 if [ -n "$seven_day_pct" ] || [ -n "$seven_day_cost" ]; then
-  printf " | 7d:"
+  printf " | 7d API equiv. (est.):"
   [ -n "$seven_day_pct" ] && rate_block "$seven_day_pct" "$seven_day_reset" "$seven_day_cost"
   [ -z "$seven_day_pct" ] && [ -n "$seven_day_cost" ] && printf " %s" "$seven_day_cost"
 fi
